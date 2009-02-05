@@ -1,0 +1,9 @@
+prefix: test/
+target: tmp/all.js
+includes:
+  - fixtures/*.js
+excludes:
+  - fixtures/c.js
+dependencies:
+  fixtures/a.js: 
+  - fixtures/b.js

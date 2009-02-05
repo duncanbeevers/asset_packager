@@ -1,0 +1,103 @@
+require File.join(File.dirname(__FILE__), 'test_helper')
+
+class AssetPackagerTest < Test::Unit::TestCase
+  def test_includes
+    p = AssetPackager.new(:includes => 'test/fixtures/*.js')
+    assert_same_elements Dir['test/fixtures/*.js'], p.contents
+  end
+  
+  def test_multiple_includes
+    p = AssetPackager.new(:includes => ['test/fixtures/a.js', 'test/fixtures/b.js'])
+    assert_same_elements Dir['test/fixtures/{a,b}.js'], p.contents
+  end
+  
+  def test_excludes
+    p = AssetPackager.new(
+      :includes => 'test/fixtures/*.js',
+      :excludes => 'test/fixtures/b.js'
+    )
+    assert_same_elements Dir['test/fixtures/*[^b].js'], p.contents
+  end
+  
+  def test_automatically_excludes_target
+    p = AssetPackager.new(
+      :target => 'test/fixtures/a.js',
+      :includes => 'test/fixtures/*.js'
+    )
+    assert !p.contents.include?('test/fixtures/a.js'),
+      "Expected packager to automatically exclude its target"
+  end
+  
+  def test_dependency
+    p = AssetPackager.new(
+      :includes     => 'test/fixtures/*.js',
+      :dependencies => {
+        'test/fixtures/a.js' => [ 'test/fixtures/b.js' ]
+      }
+    )
+    assert_precedes 'test/fixtures/b.js', 'test/fixtures/a.js', p.contents
+  end
+  
+  def test_target
+    p = AssetPackager.new(:target => 'test/tmp/all.js')
+    assert_equal 'test/tmp/all.js', p.target
+  end
+  
+  def test_prefix
+    
+  end
+  
+  def test_dirty_with_missing_target
+    sweep_tmp!
+    p = AssetPackager.new(:target => 'test/tmp/all.js')
+    assert !File.exist?(p.target),
+      "Failed precondition: expected asset packager target file to not exist"
+    
+    assert p.dirty?,
+      "Expected asset packager to be dirty when target file does not exist"
+  end
+  
+  def test_dirty_when_source_file_is_newer_than_target_file
+    sweep_tmp!
+    p = AssetPackager.new(
+      :target   => 'test/tmp/all.js',
+      :includes => 'test/fixtures/*.js'
+    )
+    
+    yesterday = 1.day.ago
+    today     = Time.now
+    
+    FileUtils.touch(p.target)
+    File.utime(yesterday, yesterday, p.target)
+    File.utime(today, today, p.contents.first)
+    
+    assert p.dirty?,
+      "Expected asset packager to be dirty when target file is older than source file"
+  end
+  
+  def test_package
+    sweep_tmp!
+    p = JavascriptPackager.new(
+      :target   => 'test/tmp/all.js',
+      :includes => 'test/fixtures/*.js'
+    )
+    p.package!
+    assert File.exists?(p.target)
+  end
+  
+  def test_from_manifest
+    yaml = YAML.load_file('test/fixtures/manifest.yml')
+    p = AssetPackager.from_manifest('test/fixtures/manifest.yml')
+    
+    assert_equal yaml['prefix'] + yaml['target'], p.target,
+      "Expected packager from manifest to read target"
+    
+    assert_precedes 'test/fixtures/b.js', 'test/fixtures/a.js', p.contents,
+      "Expected packager from manifest to obey dependencies"
+    
+    assert !p.contents.include?('test/fixtures/c.js'),
+      "Expected packager from manifest to exclude specified files"
+    
+    assert_same_elements Dir['test/fixtures/[^c].js'], p.contents
+  end
+end
