@@ -6,7 +6,15 @@ class CssPackager < AssetPackager
     ].flatten
   end
   
-  def pre_concatenate?
-    true
+  def package!(options = {})
+    super
+    
+    Tempfile.open('buffer') do |buffer|
+      contents(options).each_slice(20) do |filenames|
+        Sheller.execute(*[ 'cat', filenames, Sheller::STDOUT_APPEND_TO_FILE, buffer.path].flatten)
+      end
+      Sheller.execute('echo', ';', Sheller::STDOUT_APPEND_TO_FILE, buffer.path)
+      Sheller.execute(*compress_command([buffer.path], target(options)))
+    end
   end
 end

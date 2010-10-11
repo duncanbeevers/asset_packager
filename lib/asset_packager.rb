@@ -69,24 +69,8 @@ class AssetPackager
     File.expand_path(File.join(File.dirname(__FILE__), ('../vendor/%s.jar' % jar_name)))
   end
   
-  def compressor_arguments(buffer, options)
-    raise NotImplementedError, "compressor_arguments must be implemented by a child class"
-  end
-  
   def package!(options = {})
     raise NoTargetSpecifiedError unless target
-    
-    if pre_concatenate?
-      Tempfile.open('buffer') do |buffer|
-        contents(options).each_slice(20) do |filenames|
-          Sheller.execute(*[ 'cat', filenames, Sheller::STDOUT_APPEND_TO_FILE, buffer.path].flatten)
-        end
-        Sheller.execute('echo', ';', Sheller::STDOUT_APPEND_TO_FILE, buffer.path)
-        Sheller.execute(*compress_command([buffer.path], target(options)))
-      end
-    else
-      Sheller.execute(*compress_command(contents(options), target(options)))
-    end
   end
   
   def self.from_manifest path

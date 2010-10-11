@@ -6,7 +6,9 @@ class JavascriptPackager < AssetPackager
       src_paths.map { |p| [ "--js", p ] }.flatten
   end
   
-  def pre_concatenate?
-    false
+  def package!(options = {})
+    super
+    
+    Sheller.execute(*compress_command(contents(options), target(options)))
   end
 end
