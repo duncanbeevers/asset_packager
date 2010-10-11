@@ -2,6 +2,8 @@ require 'tsort'
 require 'tempfile'
 
 class AssetPackager
+  require 'sheller'
+  
   # Dependency graph
   class Dep < Hash
     include TSort
@@ -25,7 +27,7 @@ class AssetPackager
   end
   
   def initialize options = {}
-    @target = options.fetch(:target, '')
+    @target = options[:target]
     @includes = Array(options[:includes]).map { |d| Dir[d] }.flatten.sort
     @excludes = Array(options[:excludes]).map { |d| Dir[d] }.flatten
     @dependencies = options.fetch(:dependencies, {})
@@ -41,10 +43,11 @@ class AssetPackager
   # end
   
   def target(options = {})
-    File.join(
-      options.fetch(:target_path, File.dirname(@target)),
-      File.basename(@target)
-    )
+    @target &&
+      File.join(
+        options.fetch(:target_path, File.dirname(@target)),
+        File.basename(@target)
+      )
   end
   
   def dirty?
@@ -68,12 +71,14 @@ class AssetPackager
   def package!(options = {})
     if pre_concatenate?
       Tempfile.open('buffer') do |buffer|
-        contents(options).each { |filename| `cat #{filename} >> #{buffer.path}; echo ';' >> #{buffer.path}` }
-        `#{compress_command([buffer.path], target(options))}`
+        contents(options).each_slice(20) do |filenames|
+          Sheller.execute(*[ 'cat', filenames, Sheller::STDOUT_APPEND_TO_FILE, buffer.path].flatten)
+        end
+        Sheller.execute('echo', ';', Sheller::STDOUT_APPEND_TO_FILE, buffer.path)
+        Sheller.execute(*compress_command([buffer.path], target(options)))
       end
     else
-      # puts "#{compress_command(contents(options), target(options))}"
-      `#{compress_command(contents(options), target(options))}`
+      Sheller.execute(*compress_command(contents(options), target(options)))
     end
   end
   

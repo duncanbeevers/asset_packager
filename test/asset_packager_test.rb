@@ -44,6 +44,10 @@ class AssetPackagerTest < Test::Unit::TestCase
     assert_equal 'test/tmp/all.js', p.target
   end
   
+  def test_nil_target
+    assert_nil AssetPackager.new.target
+  end
+  
   def test_dirty_with_missing_target
     sweep_tmp!
     p = AssetPackager.new(:target => 'test/tmp/all.js')
