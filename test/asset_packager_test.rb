@@ -115,6 +115,12 @@ class AssetPackagerTest < Test::Unit::TestCase
     assert_precedes 'test/fixtures/b.js', 'test/fixtures/d.js', p.contents
   end
   
+  def test_package_requires_target
+    assert_raises AssetPackager::NoTargetSpecifiedError do
+      AssetPackager.new.package!
+    end
+  end
+  
   def test_package_to_target_path
     with_temp_dir('test/tmp2') do
       p = AssetPackager.new(

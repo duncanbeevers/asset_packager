@@ -57,7 +57,12 @@ class AssetPackager
   attr_reader :includes, :excludes
   
   def contents(options = {})
-    ((Dep.from_array(@explicit_includes) + @dependencies).tsort + @implicit_includes.sort) - [ target(options) ]
+    (
+      (
+        (Dep.from_array(@explicit_includes) + @dependencies).tsort + 
+        @implicit_includes.sort
+      ) - [ target(options) ]
+    ).compact.uniq
   end
   
   def vendor_jar(jar_name)
@@ -69,6 +74,8 @@ class AssetPackager
   end
   
   def package!(options = {})
+    raise NoTargetSpecifiedError unless target
+    
     if pre_concatenate?
       Tempfile.open('buffer') do |buffer|
         contents(options).each_slice(20) do |filenames|
@@ -99,5 +106,8 @@ class AssetPackager
                          m.merge add_prefix[k] => (v || []).map(&add_prefix)
                        end
     }
+  end
+  
+  class NoTargetSpecifiedError < StandardError
   end
 end
