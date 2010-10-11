@@ -73,8 +73,8 @@ class AssetPackagerTest < Test::Unit::TestCase
   end
   
   def test_from_manifest
-    yaml = YAML.load_file('test/fixtures/manifest.yml')
-    p = AssetPackager.from_manifest('test/fixtures/manifest.yml')
+    yaml = YAML.load_file('test/fixtures/javascripts_manifest.yml')
+    p = AssetPackager.from_manifest('test/fixtures/javascripts_manifest.yml')
     
     assert_equal yaml['prefix'] + yaml['target'], p.target,
       "Expected packager from manifest to read target"
