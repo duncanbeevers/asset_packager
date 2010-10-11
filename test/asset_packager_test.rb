@@ -72,16 +72,6 @@ class AssetPackagerTest < Test::Unit::TestCase
       "Expected asset packager to be dirty when target file is older than source file"
   end
   
-  def test_package
-    sweep_tmp!
-    p = JavascriptPackager.new(
-      :target   => 'test/tmp/all.js',
-      :includes => 'test/fixtures/*.js'
-    )
-    p.package!
-    assert File.exists?(p.target)
-  end
-  
   def test_from_manifest
     yaml = YAML.load_file('test/fixtures/manifest.yml')
     p = AssetPackager.from_manifest('test/fixtures/manifest.yml')
@@ -99,7 +89,7 @@ class AssetPackagerTest < Test::Unit::TestCase
   end
   
   def test_undeclared_dependencies_should_sort_alphabetically
-    p = JavascriptPackager.new(
+    p = AssetPackager.new(
       :includes => 'test/fixtures/*.js',
       :dependencies => {
         'test/fixtures/a.js' => [ 'test/fixtures/b.js' ]
@@ -109,7 +99,7 @@ class AssetPackagerTest < Test::Unit::TestCase
   end
   
   def test_files_with_no_dependencies_come_after_files_with_dependencies
-    p = JavascriptPackager.new(
+    p = AssetPackager.new(
       :includes => 'test/fixtures/*.js',
       :dependencies => {
         'test/fixtures/a.js' => [ 'test/fixtures/b.js' ]
@@ -123,7 +113,7 @@ class AssetPackagerTest < Test::Unit::TestCase
   
   def test_package_to_target_path
     with_temp_dir('test/tmp2') do
-      p = JavascriptPackager.new(
+      p = AssetPackager.new(
         :target => 'test/tmp/all.js',
         :includes => 'test/fixtures/*.js'
       )
