@@ -1,6 +1,6 @@
 class CssPackager < AssetPackager
   def compress_command(src_paths, dest_path)
-    [ "java", "-jar", vendor_jar('yuicompressor-2.4.2'),
+    [ "java", "-jar", AssetPackager.vendor_jar('yuicompressor-2.4.2'),
       "--type", "css",
       "-o", dest_path, src_paths
     ].flatten

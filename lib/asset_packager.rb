@@ -54,8 +54,6 @@ class AssetPackager
     !FileUtils.uptodate?(target, contents)
   end
   
-  attr_reader :includes, :excludes
-  
   def contents(options = {})
     (
       (
@@ -63,10 +61,6 @@ class AssetPackager
         @implicit_includes.sort
       ) - [ target(options) ]
     ).compact.uniq
-  end
-  
-  def vendor_jar(jar_name)
-    File.expand_path(File.join(File.dirname(__FILE__), ('../vendor/%s.jar' % jar_name)))
   end
   
   def package!(options = {})
@@ -77,6 +71,11 @@ class AssetPackager
     new(parse_manifest(path))
   end
   
+  def self.vendor_jar(jar_name)
+    File.expand_path(File.join(File.dirname(__FILE__), ('../vendor/%s.jar' % jar_name)))
+  end
+  
+  private
   def self.parse_manifest path
     yaml = YAML.load_file(path).symbolize_keys
     prefix = yaml.fetch(:prefix, '')
