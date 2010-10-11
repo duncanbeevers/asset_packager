@@ -35,16 +35,13 @@ class AssetPackagerTest < Test::Unit::TestCase
         'test/fixtures/a.js' => [ 'test/fixtures/b.js' ]
       }
     )
+    
     assert_precedes 'test/fixtures/b.js', 'test/fixtures/a.js', p.contents
   end
   
   def test_target
     p = AssetPackager.new(:target => 'test/tmp/all.js')
     assert_equal 'test/tmp/all.js', p.target
-  end
-  
-  def test_prefix
-    
   end
   
   def test_dirty_with_missing_target
@@ -100,4 +97,49 @@ class AssetPackagerTest < Test::Unit::TestCase
     
     assert_same_elements Dir['test/fixtures/[^c].js'], p.contents
   end
+  
+  def test_undeclared_dependencies_should_sort_alphabetically
+    p = JavascriptPackager.new(
+      :includes => 'test/fixtures/*.js',
+      :dependencies => {
+        'test/fixtures/a.js' => [ 'test/fixtures/b.js' ]
+      }
+    )
+    assert_precedes 'test/fixtures/c.js', 'test/fixtures/d.js', p.contents
+  end
+  
+  def test_files_with_no_dependencies_come_after_files_with_dependencies
+    p = JavascriptPackager.new(
+      :includes => 'test/fixtures/*.js',
+      :dependencies => {
+        'test/fixtures/a.js' => [ 'test/fixtures/b.js' ]
+      }
+    )
+    assert_precedes 'test/fixtures/a.js', 'test/fixtures/c.js', p.contents
+    assert_precedes 'test/fixtures/b.js', 'test/fixtures/c.js', p.contents
+    assert_precedes 'test/fixtures/a.js', 'test/fixtures/d.js', p.contents
+    assert_precedes 'test/fixtures/b.js', 'test/fixtures/d.js', p.contents
+  end
+  
+  def test_package_to_target_path
+    with_temp_dir('test/tmp2') do
+      p = JavascriptPackager.new(
+        :target => 'test/tmp/all.js',
+        :includes => 'test/fixtures/*.js'
+      )
+      assert !File.exists?('test/tmp2/all.js')
+      p.package!(:target_path => 'test/tmp2')
+      assert !File.exists?('test/tmp/all.js'),
+        "Expected packager not to have packaged to original target path when provided custom target path"
+      assert File.exists?('test/tmp2/all.js'),
+        "Expected packager to have packaged to custom target path"
+    end
+  end
+  
+  private
+    def with_temp_dir(dirname)
+      FileUtils.mkdir_p(dirname)
+    ensure
+      FileUtils.rm_rf(dirname)
+    end
 end
