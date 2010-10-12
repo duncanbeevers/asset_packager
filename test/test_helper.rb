@@ -27,6 +27,11 @@ class Test::Unit::TestCase
       message || "Expected #{antecedent.inspect} to precede #{consequent.inspect} in #{list.inspect}"
   end
   
+  def assert_package_generates_body(package, expected_body)
+    package.package!
+    assert_equal expected_body, File.read(package.target)
+  end
+  
   def sweep_tmp!
     FileUtils.rm_rf(Dir['test/tmp/*'])
   end
