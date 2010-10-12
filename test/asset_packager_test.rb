@@ -121,25 +121,12 @@ class AssetPackagerTest < Test::Unit::TestCase
     end
   end
   
-  def test_package_to_target_path
-    with_temp_dir('test/tmp2') do
-      p = AssetPackager.new(
-        :target => 'test/tmp/all.js',
-        :includes => 'test/fixtures/*.js'
-      )
-      assert !File.exists?('test/tmp2/all.js')
-      p.package!(:target_path => 'test/tmp2')
-      assert !File.exists?('test/tmp/all.js'),
-        "Expected packager not to have packaged to original target path when provided custom target path"
-      assert File.exists?('test/tmp2/all.js'),
-        "Expected packager to have packaged to custom target path"
-    end
+  def test_target_with_custom_path
+    p = AssetPackager.new(
+      :target => 'test/tmp/all.js',
+      :includes => 'test/fixtures/*.js'
+    )
+    assert_equal 'test/tmp/all.js', p.target
+    assert_equal 'test/tmp2/all.js', p.target(:target_path => 'test/tmp2')
   end
-  
-  private
-    def with_temp_dir(dirname)
-      FileUtils.mkdir_p(dirname)
-    ensure
-      FileUtils.rm_rf(dirname)
-    end
 end
