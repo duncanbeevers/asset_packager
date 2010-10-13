@@ -43,11 +43,8 @@ class AssetPackager
   # end
   
   def target(options = {})
-    @target &&
-      File.join(
-        options.fetch(:target_path, File.dirname(@target)),
-        File.basename(@target)
-      )
+    @target && options[:target_path] ?
+      File.join(options[:target_path] , @target) : @target
   end
   
   def dirty?

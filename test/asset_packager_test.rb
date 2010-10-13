@@ -136,10 +136,10 @@ class AssetPackagerTest < Test::Unit::TestCase
   
   def test_target_with_custom_path
     p = AssetPackager.new(
-      :target => 'test/tmp/all.js',
+      :target   => 'pew/all.js',
       :includes => 'test/fixtures/*.js'
     )
-    assert_equal 'test/tmp/all.js', p.target
-    assert_equal 'test/tmp2/all.js', p.target(:target_path => 'test/tmp2')
+    assert_equal 'pew/all.js', p.target
+    assert_equal 'wop/pew/all.js', p.target(:target_path => 'wop')
   end
 end
