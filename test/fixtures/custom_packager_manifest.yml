@@ -1,0 +1,4 @@
+target: tmp/custom.js
+includes:
+  - fixtures/a.js
+images_path: fowl

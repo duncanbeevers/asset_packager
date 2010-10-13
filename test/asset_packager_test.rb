@@ -1,5 +1,13 @@
 require File.join(File.dirname(__FILE__), 'test_helper')
 
+class CustomPackager < AssetPackager
+  attr_reader :initialization_options
+  def initialize(options = {})
+    @initialization_options = options
+    super
+  end
+end
+
 class AssetPackagerTest < Test::Unit::TestCase
   def test_includes
     p = AssetPackager.new(:includes => 'test/fixtures/*.js')
@@ -90,6 +98,11 @@ class AssetPackagerTest < Test::Unit::TestCase
       "Expected packager from manifest to exclude specified files"
     
     assert_same_elements Dir['test/fixtures/[^c].js'], p.contents
+  end
+  
+  def test_subclass_from_manifest_symbolizes_keys
+    p = CustomPackager.from_manifest('test/fixtures/custom_packager_manifest.yml')
+    assert_equal 'fowl', p.initialization_options[:images_path]
   end
   
   def test_undeclared_dependencies_should_sort_alphabetically

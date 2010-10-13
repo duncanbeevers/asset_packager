@@ -76,19 +76,22 @@ class AssetPackager
   end
   
   private
-  def self.parse_manifest path
-    yaml = YAML.load_file(path).symbolize_keys
-    prefix = yaml.fetch(:prefix, '')
-    target = File.join(prefix, yaml[:target]) or raise ArgumentError, "No target defined."
-    add_prefix = lambda { |path| File.join(prefix, path) }
-    {
-      :target => target,
-      :includes => Array(yaml[:includes]).map(&add_prefix),
-      :excludes => Array(yaml[:excludes]).map(&add_prefix),
-      :dependencies => (yaml[:dependencies] || {}).inject({}) do |m,(k,v)|
-                         m.merge add_prefix[k] => (v || []).map(&add_prefix)
-                       end
-    }
+  def self.parse_manifest(path)
+    yaml         = YAML.load_file(path).symbolize_keys
+    prefix       = yaml.fetch(:prefix, '')
+    target       = File.join(prefix, yaml[:target]) or raise ArgumentError, "No target defined."
+    add_prefix   = lambda { |path| File.join(prefix, path) }
+    
+    dependencies = (yaml[:dependencies] || {}).inject({}) do |m,(k,v)|
+                       m.merge add_prefix[k] => (v || []).map(&add_prefix)
+                     end
+    
+    yaml.merge(
+      :target       => target,
+      :includes     => Array(yaml[:includes]).map(&add_prefix),
+      :excludes     => Array(yaml[:excludes]).map(&add_prefix),
+      :dependencies => dependencies
+    )
   end
   
   class NoTargetSpecifiedError < StandardError
