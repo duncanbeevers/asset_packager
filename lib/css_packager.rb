@@ -43,6 +43,10 @@ class CssPackager < AssetPackager
     end
   end
   
+  def mhtml?
+    !!@mhtml_root
+  end
+  
   def self.compress_command(src_paths)
     [ "java", "-jar", AssetPackager.vendor_jar('yuicompressor-2.4.2'),
       "--type", "css", src_paths
