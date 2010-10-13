@@ -80,7 +80,11 @@ class AssetPackager
   
   private
   def self.parse_manifest(path)
-    yaml         = YAML.load_file(path).symbolize_keys
+    yaml_hash    = YAML.load_file(path)
+    raise ArgumentError, "#{path} should contain a YAML hash" unless yaml_hash.is_a?(Hash)
+    
+    yaml = yaml_hash.inject({}) { |a, (k, v)| a[k.to_sym] = v; a }
+    
     prefix       = yaml.fetch(:prefix, '')
     target       = File.join(prefix, yaml[:target]) or raise ArgumentError, "No target defined."
     add_prefix   = lambda { |path| File.join(prefix, path) }

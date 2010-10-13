@@ -73,10 +73,11 @@ class AssetPackagerTest < Test::Unit::TestCase
       :includes => 'test/fixtures/*.js'
     )
     
-    yesterday = 1.day.ago
     today     = Time.now
+    yesterday = today - 86400 # 1 day
     
     FileUtils.touch(p.target)
+    
     File.utime(yesterday, yesterday, p.target)
     File.utime(today, today, p.contents.first)
     

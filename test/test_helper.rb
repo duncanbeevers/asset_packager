@@ -3,11 +3,12 @@ $:.unshift(File.dirname(__FILE__) + '/../lib')
 # Setup
 require 'test/unit'
 require 'rubygems'
-require 'active_support'
 
 require 'ruby-debug'
 Debugger.settings[:autoeval] = true
 Debugger.start
+
+require 'yaml'
 
 require File.join(File.dirname(__FILE__), '../init')
 
@@ -33,6 +34,7 @@ class Test::Unit::TestCase
   end
   
   def sweep_tmp!
-    FileUtils.rm_rf(Dir['test/tmp/*'])
+    FileUtils.rm_rf('test/tmp')
+    FileUtils.mkdir_p('test/tmp')
   end
 end
