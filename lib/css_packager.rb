@@ -16,12 +16,14 @@ class CssPackager < AssetPackager
   def package!(options = {})
     super
     
+    replaceable_images = self.class.non_duplicate_images_from_files(contents(options))
+    
     Tempfile.open('buffer') do |buffer|
       # Concatenate all the css source files together,
       # replacing image urls with data uris if configured to do so
       contents(options).each do |filename|
         body = File.read(filename)
-        buffer << (@images_root ? self.class.encode_image_refs(body, @images_root) : body)
+        buffer << (@images_root ? self.class.encode_image_refs(body, @images_root, replaceable_images) : body)
       end
       buffer.flush
       
@@ -29,18 +31,39 @@ class CssPackager < AssetPackager
     end
   end
   
-  def self.encode_image_refs(body, images_root)
+  def self.encode_image_refs(body, images_root, replaceable_images)
     body.gsub(/url\([^\)]+\)/) do |m|
       # Assume domain-relative, absolute path urls
-      url              = /url\(([^\)]+)\)/.match(m)[1]
-      path             = /([^\?]+)/.match(url)[1]
-      filename_on_disk = File.expand_path(File.join(images_root, path))
-      mime_type        = "image/%s" % File.extname(path)[1..-1]
+      path = path_from_match(m)
       
-      "url(data:%s;base64,%s)" % [
-        mime_type,
-        Base64.encode64(File.read(filename_on_disk)).gsub("\n", '')
-      ]
+      if 1 == replaceable_images[path]
+        filename_on_disk = File.expand_path(File.join(images_root, path))
+        mime_type        = "image/%s" % File.extname(path)[1..-1]
+        
+        "url(data:%s;base64,%s)" % [
+          mime_type,
+          Base64.encode64(File.read(filename_on_disk)).gsub("\n", '')
+        ]
+      else
+        m
+      end
     end
+  end
+  
+  def self.non_duplicate_images_from_files(filenames)
+    occurrence_counts = Hash.new(0)
+    
+    filenames.each do |filename|
+      body = File.read(filename)
+      body.scan(/url\([^\)]+\)/) do |m|
+        occurrence_counts[path_from_match(m)] += 1
+      end
+    end
+    
+    occurrence_counts
+  end
+  
+  def self.path_from_match(m)
+    /([^\?]+)/.match(/url\(([^\)]+)\)/.match(m)[1])[1]
   end
 end

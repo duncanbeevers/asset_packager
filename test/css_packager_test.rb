@@ -50,4 +50,16 @@ class CssPackagerTest < Test::Unit::TestCase
       ".css_rule_c{background-image:url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==);}"
     )
   end
+  
+  def test_does_not_encode_duplicated_files
+    assert_package_generates_body(
+      CssPackager.new(
+        :target      => 'test/tmp/all.css',
+        :includes    => 'test/fixtures/d.css',
+        :images_root => 'test/fixtures'
+      ),
+      
+      ".css_rule_d1{background-image:url(/images/1x1.png);}.css_rule_d2{background-image:url(/images/1x1.png?1);}"
+    )
+  end
 end
