@@ -67,8 +67,14 @@ class AssetPackager
     raise NoTargetSpecifiedError unless target
   end
   
-  def self.from_manifest path
-    new(parse_manifest(path))
+  def self.from_manifest(path)
+    instance = new(parse_manifest(path))
+    AssetPackager.instances_from_manifests << instance
+    instance
+  end
+  
+  def self.instances_from_manifests
+    @instances_from_manifests ||= []
   end
   
   def self.vendor_jar(jar_name)
