@@ -1,6 +1,5 @@
 class CssPackager < AssetPackager
   require 'base64'
-  require 'digest/md5'
   
   URL_REF = /url\([^\)]+\)/
   
@@ -18,7 +17,10 @@ class CssPackager < AssetPackager
   
   MHTML_START     = "/*\r\nContent-Type: multipart/related; boundary=\"MHTML_MARK\"\r\n"
   MHTML_SEPARATOR = "\r\n--MHTML_MARK"
+  MHTML_PART      = "\r\nContent-Location:%s\r\nContent-Type:%s\r\nContent-Transfer-Encoding:base64\r\n\r\n%s"
   MHTML_END       = "--\r\n*/\r\n"
+  MHTML_PART_REF  = "url(mhtml:%s!%s)"
+  DATA_URI_REF    = "url(data:%s;base64,%s)"
   
   def initialize(options = {})
     @assets_root = options[:assets_root]
@@ -71,12 +73,9 @@ class CssPackager < AssetPackager
       path = path_from_match(m)
       
       if 1 == occurrence_counts[path]
-        filename_on_disk = File.expand_path(File.join(assets_root, path))
+        filename = File.expand_path(File.join(assets_root, path))
         
-        "url(data:%s;base64,%s)" % [
-          mime_type(path),
-          Base64.encode64(File.read(filename_on_disk)).gsub("\n", '')
-        ]
+        DATA_URI_REF % [ mime_type(path), base64_encode_file(filename) ]
       else
         m
       end
@@ -88,24 +87,17 @@ class CssPackager < AssetPackager
     mhtml_head = [ MHTML_START ]
     
     mhtml_body = body.gsub(URL_REF) do |m|
-      path = path_from_match(m)
+      path             = path_from_match(m)
+      filename         = File.expand_path(File.join(assets_root, path))
+      base64           = base64_encode_file(filename)
+      
+      content_location = "%s-%s" % [ mhtml_head.length, File.basename(path), ]
       
       if 1 == occurrence_counts[path]
-        filename_on_disk = File.expand_path(File.join(assets_root, path))
-        content_location = Digest::MD5.hexdigest(path)
+        filename = File.expand_path(File.join(assets_root, path))
         
-        mhtml_head.push(
-        "\r\nContent-Location: %s\r\nContent-Transfer-Encoding: base64\r\nContent-Type: %s\r\n\r\n%s" % [
-            content_location,
-            mime_type(path),
-            Base64.encode64(File.read(filename_on_disk)).gsub("\n", '')
-          ]
-        )
-        
-        "url(mhtml:%s!%s)" % [
-          mhtml_root,
-          content_location
-        ]
+        mhtml_head.push(MHTML_PART % [ content_location, mime_type(path), base64 ])
+        MHTML_PART_REF % [ mhtml_root, content_location ]
       else
         m
       end
@@ -117,6 +109,10 @@ class CssPackager < AssetPackager
       mhtml_head.join(MHTML_SEPARATOR),
       mhtml_body
     ]
+  end
+  
+  def self.base64_encode_file(filename)
+    Base64.encode64(File.read(filename)).gsub("\n", '')
   end
   
   def self.asset_occurrence_counts(body)
