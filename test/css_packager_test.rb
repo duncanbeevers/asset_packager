@@ -72,7 +72,7 @@ class CssPackagerTest < Test::Unit::TestCase
         :mhtml_root  => 'http://www.kongregate.com/stylesheets/all.css'
       ),
       
-      "/*\r\nContent-Type: multipart/related; boundary=\"MHTML_MARK\"\r\n\r\n--MHTML_MARK\r\nContent-Location:1-1x1.png\r\nContent-Type:image/png\r\nContent-Transfer-Encoding:base64\r\n\r\niVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==\r\n--MHTML_MARK--\r\n*/\r\n.css_rule_b{background-image:url(mhtml:http://www.kongregate.com/stylesheets/all.css!1-1x1.png);}"
+      "/*\r\nContent-Type: multipart/related; boundary=\"MHTML_MARK\"\r\n\r\n--MHTML_MARK\r\nContent-Location: b252bd907d52b799da2ef72df6e2d62c.png\r\nContent-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\niVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==\r\n--MHTML_MARK--\r\n*/\r\n.css_rule_b{background-image:url(mhtml:http://www.kongregate.com/stylesheets/all.css!b252bd907d52b799da2ef72df6e2d62c.png);}"
     )
   end
 end

@@ -1,5 +1,6 @@
 class CssPackager < AssetPackager
   require 'base64'
+  require 'digest/md5'
   
   URL_REF = /url\([^\)]+\)/
   
@@ -17,7 +18,7 @@ class CssPackager < AssetPackager
   
   MHTML_START     = "/*\r\nContent-Type: multipart/related; boundary=\"MHTML_MARK\"\r\n"
   MHTML_SEPARATOR = "\r\n--MHTML_MARK"
-  MHTML_PART      = "\r\nContent-Location:%s\r\nContent-Type:%s\r\nContent-Transfer-Encoding:base64\r\n\r\n%s"
+  MHTML_PART      = "\r\nContent-Location: %s\r\nContent-Type: %s\r\nContent-Transfer-Encoding: base64\r\n\r\n%s"
   MHTML_END       = "--\r\n*/\r\n"
   MHTML_PART_REF  = "url(mhtml:%s!%s)"
   DATA_URI_REF    = "url(data:%s;base64,%s)"
@@ -91,7 +92,7 @@ class CssPackager < AssetPackager
       filename         = File.expand_path(File.join(assets_root, path))
       base64           = base64_encode_file(filename)
       
-      content_location = "%s-%s" % [ mhtml_head.length, File.basename(path), ]
+      content_location = "%s%s" % [ Digest::MD5.hexdigest(path), File.extname(path) ]
       
       if 1 == occurrence_counts[path]
         filename = File.expand_path(File.join(assets_root, path))
