@@ -23,6 +23,8 @@ class CssPackager < AssetPackager
   MHTML_PART_REF  = "url(mhtml:%s!%s)"
   DATA_URI_REF    = "url(data:%s;base64,%s)"
   
+  attr_reader :mhtml_root
+  
   def initialize(options = {})
     @assets_root = options[:assets_root]
     @mhtml_root  = options[:mhtml_root]
