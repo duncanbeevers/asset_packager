@@ -26,6 +26,8 @@ class AssetPackager
     end
   end
   
+  attr_reader :manifest_path
+  
   def initialize options = {}
     @target = options[:target]
     @includes = Array(options[:includes]).map { |d| Dir[d] }.flatten.sort
@@ -35,6 +37,7 @@ class AssetPackager
     @explicit_includes, @implicit_includes = (@includes - @excludes).partition do |filename|
       closure.include?(filename)
     end
+    @manifest_path = options[:manifest_path]
   end
   
   # def to_s
@@ -79,8 +82,8 @@ class AssetPackager
   end
   
   private
-  def self.parse_manifest(path)
-    yaml_hash    = YAML.load_file(path)
+  def self.parse_manifest(manifest_path)
+    yaml_hash    = YAML.load_file(manifest_path)
     raise ArgumentError, "#{path} should contain a YAML hash" unless yaml_hash.is_a?(Hash)
     
     yaml = yaml_hash.inject({}) { |a, (k, v)| a[k.to_sym] = v; a }
@@ -94,10 +97,11 @@ class AssetPackager
                      end
     
     yaml.merge(
-      :target       => target,
-      :includes     => Array(yaml[:includes]).map(&add_prefix),
-      :excludes     => Array(yaml[:excludes]).map(&add_prefix),
-      :dependencies => dependencies
+      :target        => target,
+      :includes      => Array(yaml[:includes]).map(&add_prefix),
+      :excludes      => Array(yaml[:excludes]).map(&add_prefix),
+      :dependencies  => dependencies,
+      :manifest_path => manifest_path
     )
   end
   
