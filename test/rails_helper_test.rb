@@ -25,6 +25,14 @@ class PackagingHelper
   def javascript_include_tag(*files)
     ('<script src="%s" type="text/javascript"></script>' * files.length) % files
   end
+  
+  def javascript_tag(source)
+    '<script type="text/javascript">%s</script>' % source
+  end
+  
+  def stylesheet_tag(source)
+    '<style rel="stylesheet" type="text/css">%s</style>' % source
+  end
 end
 
 class NonPackagingHelper < PackagingHelper
@@ -68,11 +76,38 @@ class AssetPackagerRailsHelperTest < Test::Unit::TestCase
     )
   end
   
+  def test_packaged_stylesheet_link_tag_inline
+    helper = PackagingHelper.new
+    packager = CssPackager.new(
+      :target   => 'test/tmp/public/stylesheets/all.css',
+      :includes => [ 'test/fixtures/a.css', 'test/fixtures/b.css' ],
+      :inline   => true
+    )
+    
+    assert_equal(
+      "<style rel=\"stylesheet\" type=\"text/css\">.css_rule_a{background-color:transparent;}.css_rule_b{background-image:url(/images/1x1.png?1);}</style>",
+      helper.packaged_stylesheet_link_tag(packager)
+    )
+  end
+  
+  def test_packaged_stylesheet_link_tag_nonpackaged_inline
+    helper = NonPackagingHelper.new
+    packager = CssPackager.new(
+      :includes => [ 'test/fixtures/a.css', 'test/fixtures/b.css' ],
+      :inline   => true
+    )
+    
+    assert_equal(
+      "<style rel=\"stylesheet\" type=\"text/css\">.css_rule_a { background-color: transparent; }\n.css_rule_b { background-image: url(/images/1x1.png?1); }\n</style>",
+      helper.packaged_stylesheet_link_tag(packager)
+    )
+  end
+  
   def test_packaged_javascript_include_tag
     helper = PackagingHelper.new
     packager = JavascriptPackager.new(
       :target   => 'test/tmp/public/javascripts/all.js',
-      :includes => [ 'test/fixtures/a.js',  'test/fixtures/b.js' ]
+      :includes => [ 'test/fixtures/a.js', 'test/fixtures/b.js' ]
     )
     
     assert_equal(
@@ -85,11 +120,38 @@ class AssetPackagerRailsHelperTest < Test::Unit::TestCase
     helper = NonPackagingHelper.new
     packager = JavascriptPackager.new(
       :target   => 'test/tmp/public/javascripts/all.js',
-      :includes => [ 'test/fixtures/a.js',  'test/fixtures/b.js' ]
+      :includes => [ 'test/fixtures/a.js', 'test/fixtures/b.js' ]
     )
     
     assert_equal(
       '<script src="../../../fixtures/a.js" type="text/javascript"></script><script src="../../../fixtures/b.js" type="text/javascript"></script>',
+      helper.packaged_javascript_include_tag(packager)
+    )
+  end
+  
+  def test_packaged_javascript_include_tag_inline
+    helper = PackagingHelper.new
+    packager = JavascriptPackager.new(
+      :target   => 'test/tmp/public/javascripts/all.js',
+      :includes => [ 'test/fixtures/a.js', 'test/fixtures/b.js' ],
+      :inline   => true
+    )
+    
+    assert_equal(
+      "<script type=\"text/javascript\">function A(){};function B(){};\n</script>",
+      helper.packaged_javascript_include_tag(packager)
+    )
+  end
+  
+  def test_packaged_javascript_include_tag_nonpackaged_inline
+    helper = NonPackagingHelper.new
+    packager = JavascriptPackager.new(
+      :includes => [ 'test/fixtures/a.js', 'test/fixtures/b.js' ],
+      :inline   => true
+    )
+    
+    assert_equal(
+      "<script type=\"text/javascript\">function A() {}\nfunction B() {}\n</script>",
       helper.packaged_javascript_include_tag(packager)
     )
   end

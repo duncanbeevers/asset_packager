@@ -32,9 +32,12 @@ class Test::Unit::TestCase
     package.package!
     assert_equal expected_body, File.read(package.target)
   end
-  
-  def sweep_tmp!
-    FileUtils.rm_rf('test/tmp')
-    FileUtils.mkdir_p('test/tmp')
-  end
 end
+
+def sweep_tmp!
+  FileUtils.rm_rf('test/tmp')
+  FileUtils.mkdir_p('test/tmp/public/stylesheets')
+  FileUtils.mkdir_p('test/tmp/public/javascripts')
+end
+
+sweep_tmp!

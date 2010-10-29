@@ -38,12 +38,25 @@ class AssetPackager
       closure.include?(filename)
     end
     @manifest_path = options[:manifest_path]
+    @inline = options[:inline]
   end
   
-  # def to_s
-  #   package! if dirty?
-  #   File.read(target)
-  # end
+  def inline?
+    @inline
+  end
+  
+  def unpackaged_body
+    @unpackaged_body ||= contents.map do |file|
+      File.read(file)
+    end.join
+  end
+  
+  def packaged_body
+    return @packaged_body if @packaged_body
+    
+    package! if dirty?
+    @packaged_body = File.read(target)
+  end
   
   def target(options = {})
     @target && options[:target_path] ?
@@ -51,7 +64,7 @@ class AssetPackager
   end
   
   def dirty?
-    !FileUtils.uptodate?(target, contents)
+    target && !FileUtils.uptodate?(target, contents)
   end
   
   def contents(options = {})
