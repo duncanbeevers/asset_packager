@@ -9,7 +9,8 @@ class JavascriptPackagerTest < Test::Unit::TestCase
     assert_package_generates_body(
       JavascriptPackager.new(
         :target   => 'test/tmp/all.js',
-        :includes => 'test/fixtures/*.js'
+        :includes => 'test/fixtures/*.js',
+        :excludes => 'test/fixtures/e.js'
       ),
       
       "function A(){};function B(){};function C(){};function D(){};\n"

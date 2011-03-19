@@ -1,0 +1,11 @@
+.css_rule_e1 {
+  height: 80px;
+  background: transparent url(images/1x1.png) no-repeat 0;
+}
+
+.css_rule_e2 {
+  height: 25px;
+  background: transparent url(images/1x1.gif) no-repeat 0 0 fixed;
+  color: #fff;
+}
+

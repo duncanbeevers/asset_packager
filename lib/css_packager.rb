@@ -1,8 +1,9 @@
 class CssPackager < AssetPackager
-  require 'base64'
-  require 'digest/md5'
-  
-  URL_REF = /url\([^\)]+\)/
+  URL_REF                   = /url\([^\)]+\)/
+  URL_RULE_REF              = /(?:^|[^\}]+)url\([^\)]+\)[^\}]*\}/
+  SHORTHAND_BACKGROUND_REF  = /background:([^;]+)/
+  SELECTOR_STYLE_REF        = /([^\{]+)\{([^\}]+)\}/
+  BACKGROUND_STYLE_REF      = /([\S]+)\s+(url\([^\)]+\))/
   
   EMBED_MIME_TYPES = {
     '.png'  => 'image/png',
@@ -26,9 +27,10 @@ class CssPackager < AssetPackager
   attr_reader :mhtml_root
   
   def initialize(options = {})
+    super
     @assets_root = options[:assets_root]
     @mhtml_root  = options[:mhtml_root]
-    super
+    @partition_assets = options[:partition_assets]
   end
   
   def package!(options = {})
@@ -41,23 +43,108 @@ class CssPackager < AssetPackager
         Sheller.execute(*([ 'cat' ] + filenames + [ Sheller::STDOUT_APPEND_TO_FILE, buffer.path ]))
       end
       body = Sheller.execute(*self.class.compress_command([ buffer.path ])).stdout
-      
-      File.open(target(options), 'w') do |output_file|
-        output_file << self.class.embed_assets(body, @assets_root, @mhtml_root)
+
+      if partition_assets
+        asset_refs_body = self.class.partition_asset_refs!(body, @assets_root, @mhtml_root)
+
+        File.open(partition_assets(options), 'w') do |partition_file|
+          partition_file << self.class.embed_assets(asset_refs_body, @assets_root, @mhtml_root)
+        end
+        File.open(target(options), 'w') do |output_file|
+          output_file << body
+        end
+      else
+        File.open(target(options), 'w') do |output_file|
+          output_file << self.class.embed_assets(body, @assets_root, @mhtml_root)
+        end
       end
     end
   end
   
   def mhtml?
-    !!@mhtml_root
+    !!(@assets_root && @mhtml_root)
   end
-  
+
+  def targets(options = {})
+    partition_assets ?
+      [ target(options), partition_assets(options) ] :
+      super
+  end
+
+  def partition_assets(options = {})
+    stem = nil
+    if true == @partition_assets
+      t = target(options)
+      if t
+        ext = File.extname(t)
+        stem = File.join(File.dirname(t), "%s-resources%s" % [ File.basename(t, ext), ext ])
+      end
+    else
+      stem = prefix_path(@partition_assets)
+    end
+
+    options[:target_path] ?
+      File.join(options[:target_path], stem) :
+      stem
+  end
+
+  protected
+  def id_seed
+    [ super,
+      @mhtml_root && @assets_root,
+      @assets_root,
+      @partition_assets
+    ].compact.join
+  end
+
   def self.compress_command(src_paths)
     [ "java", "-jar", AssetPackager.vendor_jar('yuicompressor-2.4.2'),
       "--type", "css", src_paths
     ].flatten
   end
   
+  def self.partition_asset_refs!(body, assets_root, mhtml_root)
+    partitioned_rules = []
+
+    body.gsub!(URL_RULE_REF) do |m|
+      shorthand = SHORTHAND_BACKGROUND_REF.match(m)
+      replacement_rule = ''
+
+      if shorthand
+        _, selector, styles = *SELECTOR_STYLE_REF.match(m)
+        color, image, repeat, xpos, ypos, attachment = nil
+        styles.gsub!(SHORTHAND_BACKGROUND_REF) do |m2|
+          _, background_styles = *SHORTHAND_BACKGROUND_REF.match(m2)
+          _, color, image = *BACKGROUND_STYLE_REF.match(background_styles)
+
+          background_styles.gsub!(BACKGROUND_STYLE_REF, '')
+
+          if image
+            repeat, xpos, ypos, attachment = background_styles.split(' ')
+          else
+            image, repeat, xpos, ypos, attachment = background_styles.split(' ')
+          end
+
+          [
+            color ? "background-color:#{color}" : nil,
+            repeat ? "background-repeat:#{repeat}" : nil,
+            xpos && ypos ? "background-position:#{xpos} #{ypos}" : nil,
+            xpos && !ypos ? "background-position-x:#{xpos}" : nil,
+            attachment ? "background-attachment:#{attachment}" : nil
+          ].compact.join(';')
+        end
+
+        replacement_rule = "#{selector}{#{styles}}"
+        m = "#{selector}{background-image:#{image};}"
+      end
+
+      partitioned_rules.push(m)
+      replacement_rule
+    end
+
+    partitioned_rules.join
+  end
+
   def self.embed_assets(body, assets_root, mhtml_root)
     if assets_root && mhtml_root
       mhtml_wrap_asset_refs(body, assets_root, mhtml_root)
@@ -91,15 +178,13 @@ class CssPackager < AssetPackager
     
     mhtml_body = body.gsub(URL_REF) do |m|
       path             = path_from_match(m)
-      filename         = File.expand_path(File.join(assets_root, path))
-      base64           = base64_encode_file(filename)
-      
-      content_location = "%s%s" % [ Digest::MD5.hexdigest(path), File.extname(path) ]
-      
+
       if 1 == occurrence_counts[path]
-        filename = File.expand_path(File.join(assets_root, path))
-        
-        mhtml_head.push(MHTML_PART % [ content_location, mime_type(path), base64 ])
+        filename         = File.expand_path(File.join(assets_root, path))
+        content_location = "%s%s" % [ AssetPackager.digest(path), File.extname(path) ]
+
+        mhtml_head.push(MHTML_PART % [ content_location, mime_type(path), base64_encode_file(filename) ])
+
         MHTML_PART_REF % [ mhtml_root, content_location ]
       else
         m
@@ -107,7 +192,7 @@ class CssPackager < AssetPackager
     end
     
     mhtml_head.push(MHTML_END)
-    
+
     "%s%s" % [
       mhtml_head.join(MHTML_SEPARATOR),
       mhtml_body

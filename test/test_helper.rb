@@ -32,6 +32,11 @@ class Test::Unit::TestCase
     package.package!
     assert_equal expected_body, File.read(package.target)
   end
+
+  def assert_package_generates_resource(package, resource, expected_resource_body)
+    package.package!
+    assert_equal expected_resource_body, File.read(resource)
+  end
 end
 
 def sweep_tmp!

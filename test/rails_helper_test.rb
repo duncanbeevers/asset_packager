@@ -9,6 +9,11 @@ module ActionView
     module AssetTagHelper
       JAVASCRIPTS_DIR = File.expand_path(File.join(File.dirname(__FILE__), 'tmp/public/javascripts/'))
       STYLESHEETS_DIR = File.expand_path(File.join(File.dirname(__FILE__), 'tmp/public/stylesheets/'))
+
+      private
+      def compute_public_path(source, dir, ext = nil, include_host = true)
+        source
+      end
     end
   end
 end
@@ -17,6 +22,7 @@ load File.join(File.dirname(__FILE__), '../init.rb')
 
 class PackagingHelper
   include AssetPackager::RailsHelper
+  include ActionView::Helpers::AssetTagHelper
   
   def stylesheet_link_tag(*files)
     ('<link href="%s" type="text/css" />' * files.length) % files
@@ -154,5 +160,52 @@ class AssetPackagerRailsHelperTest < Test::Unit::TestCase
       "<script type=\"text/javascript\">function A() {}\nfunction B() {}\n</script>",
       helper.packaged_javascript_include_tag(packager)
     )
+  end
+
+  def test_packaged_javascript_include_tag_with_arguments_packaged_inline
+    helper = PackagingHelper.new
+    packager = JavascriptPackager.new(
+      :target   => 'test/tmp/public/javascripts/with_args.js',
+      :includes => [ 'test/fixtures/e.js' ],
+      :inline   => true
+    )
+
+    assert_equal(
+      "function Constructor(a){console.log(\"evacuate!\")};\nalert('freeze');",
+      helper.package_body(packager, "alert('freeze');")
+    )
+  end
+
+  def test_packaged_javascript_include_tag_with_arguments_nonpackaged_inline
+    helper = NonPackagingHelper.new
+    packager = JavascriptPackager.new(
+      :includes => [ 'test/fixtures/e.js' ],
+      :inline   => true
+    )
+
+    assert_equal(
+      "function Constructor(arg) {\n  console.log(\"evacuate!\");\n}\n\nalert('freeze');",
+      helper.package_body(packager, "alert('freeze');")
+    )
+  end
+
+  def test_package_partition_file_urls_nonpackaged
+    helper = NonPackagingHelper.new
+    packager = CssPackager.new(
+      :includes         => [ 'test/fixtures/b.css' ],
+      :partition_assets => 'test/tmp/partition.css'
+    )
+
+    assert_same_elements [], helper.package_partition_file_urls(packager)
+  end
+
+  def test_package_partition_file_urls_packaged
+    helper = PackagingHelper.new
+    packager = CssPackager.new(
+      :includes         => [ 'test/fixtures/b.css' ],
+      :partition_assets => 'test/tmp/partition.css'
+    )
+
+    assert_same_elements [ '../../partition.css' ], helper.package_partition_file_urls(packager)
   end
 end
